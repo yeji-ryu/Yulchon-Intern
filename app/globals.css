@@ -535,4 +535,15 @@ button {
   .chip-row {
     grid-auto-flow: row;
   }
+
+  .button.danger {
+  background: #dc2626;
+  color: white;
+}
+
+.button.danger.small {
+  padding: 8px 12px;
+  border-radius: 12px;
+  font-size: 0.85rem;
+}
 }

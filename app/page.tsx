@@ -175,6 +175,8 @@ export default function HomePage() {
     window.localStorage.removeItem('lunch_nickname');
   }
 
+  const isAdmin = nickname.trim() === '인프라보안팀유예지';
+
   async function handleCreateRestaurant() {
     if (!supabase) return;
 
@@ -328,9 +330,64 @@ export default function HomePage() {
     }
   }
 
+    async function handleDeleteNote(noteId: string) {
+    if (!supabase) return;
+    if (!isAdmin) {
+      alert('삭제 권한이 없어유.');
+      return;
+    }
+
+    const ok = window.confirm('이 비고를 삭제할껀가요? 연결된 비고도 같이 삭제돼요..');
+    if (!ok) return;
+
+    setSaving(true);
+    setErrorMessage('');
+
+    const { error } = await supabase.from('notes').delete().eq('id', noteId);
+
+    setSaving(false);
+
+    if (error) {
+      setErrorMessage(error.message);
+      return;
+    }
+
+    setNotes((prev) => prev.filter((note) => note.id !== noteId));
+  }
+
   function toggleRestaurantNotes(restaurantId: string) {
     setOpenNoteRestaurantId((prev) => (prev === restaurantId ? '' : restaurantId));
   }
+
+  async function handleDeleteRestaurant(restaurantId: string) {
+  if (!supabase) return;
+  if (!isAdmin) {
+    alert('삭제 권한이 없어유.');
+    return;
+  }
+
+  const ok = window.confirm('이 식당을 삭제할껀가요? 연결된 비고도 같이 삭제돼요..');
+  if (!ok) return;
+
+  setSaving(true);
+  setErrorMessage('');
+
+  const { error } = await supabase.from('restaurants').delete().eq('id', restaurantId);
+
+  setSaving(false);
+
+  if (error) {
+    setErrorMessage(error.message);
+    return;
+  }
+
+  setRestaurants((prev) => prev.filter((restaurant) => restaurant.id !== restaurantId));
+  setNotes((prev) => prev.filter((note) => note.restaurant_id !== restaurantId));
+
+  if (selectedRestaurantId === restaurantId) {
+    setSelectedRestaurantId('');
+  }
+}
 
   const topThree = visibleRestaurants.slice(0, 3);
 
@@ -720,6 +777,17 @@ export default function HomePage() {
                   >
                     식당 정보 수정하기
                   </button>
+
+                  {isAdmin && selectedRestaurant && (
+                    <button
+                      type="button"
+                      className="button danger"
+                      onClick={() => handleDeleteRestaurant(selectedRestaurant.id)}
+                      disabled={saving}
+                    >
+                      식당 삭제
+                    </button>
+                  )}
                 </div>
 
                 {editMode && (
@@ -922,7 +990,20 @@ export default function HomePage() {
                           {new Date(note.created_at).toLocaleDateString('ko-KR')}
                         </div>
                       </div>
-                      <span>★ {note.rating.toFixed(1)}</span>
+
+                      <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
+                        <span>★ {note.rating.toFixed(1)}</span>
+                        {isAdmin && (
+                          <button
+                            type="button"
+                            className="button danger small"
+                            onClick={() => handleDeleteNote(note.id)}
+                            disabled={saving}
+                          >
+                            삭제
+                          </button>
+                        )}
+                      </div>
                     </div>
 
                     <p className="note-text">{note.text}</p>
