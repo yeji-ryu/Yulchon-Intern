@@ -45,7 +45,7 @@ export default function HomePage() {
   const [nickname, setNickname] = useState('');
   const [restaurants, setRestaurants] = useState<Restaurant[]>([]);
   const [notes, setNotes] = useState<Note[]>([]);
-  const [selectedRestaurantId, setSelectedRestaurantId] = useState<string>('');
+  const [selectedRestaurantId, setSelectedRestaurantId] = useState<number | null>(null);
   const [restaurantForm, setRestaurantForm] =
     useState<RestaurantForm>(initialRestaurantForm);
   const [noteForm, setNoteForm] = useState<NoteForm>(initialNoteForm);
@@ -62,7 +62,7 @@ export default function HomePage() {
     '전체' | '웨이팅 있음' | '웨이팅 없음'
   >('전체');
   const [errorMessage, setErrorMessage] = useState('');
-  const [openNoteRestaurantId, setOpenNoteRestaurantId] = useState<string>('');
+  const [openNoteRestaurantId, setOpenNoteRestaurantId] = useState<number | null>(null);
 
   useEffect(() => {
     const savedNickname = window.localStorage.getItem('lunch_nickname') ?? '';
@@ -83,37 +83,50 @@ export default function HomePage() {
     setLoading(true);
     setErrorMessage('');
 
-    const [restaurantResult, noteResult] = await Promise.all([
-      supabase
-        .from('restaurants')
-        .select('*')
-        .order('created_at', { ascending: false }),
-      supabase.from('notes').select('*').order('created_at', { ascending: false }),
-    ]);
+    try {
+      const [restaurantResult, noteResult] = await Promise.all([
+        supabase
+          .from('restaurants')
+          .select('*')
+          .order('created_at', { ascending: false }),
+        supabase
+          .from('notes')
+          .select('*')
+          .order('created_at', { ascending: false }),
+      ]);
 
-    if (restaurantResult.error) {
-      setErrorMessage(restaurantResult.error.message);
+      if (restaurantResult.error) {
+        setErrorMessage(restaurantResult.error.message);
+        return;
+      }
+
+      if (noteResult.error) {
+        setErrorMessage(noteResult.error.message);
+        return;
+      }
+
+      const nextRestaurants = (restaurantResult.data ?? []) as Restaurant[];
+      const nextNotes = (noteResult.data ?? []) as Note[];
+
+      setRestaurants(nextRestaurants);
+      setNotes(nextNotes);
+
+      setSelectedRestaurantId((prev) => {
+        if (prev !== null && nextRestaurants.some((restaurant) => restaurant.id === prev)) {
+          return prev;
+        }
+        return nextRestaurants[0]?.id ?? null;
+      });
+
+      setOpenNoteRestaurantId((prev) => {
+        if (prev !== null && nextRestaurants.some((restaurant) => restaurant.id === prev)) {
+          return prev;
+        }
+        return null;
+      });
+    } finally {
       setLoading(false);
-      return;
     }
-
-    if (noteResult.error) {
-      setErrorMessage(noteResult.error.message);
-      setLoading(false);
-      return;
-    }
-
-    const nextRestaurants = (restaurantResult.data ?? []) as Restaurant[];
-    const nextNotes = (noteResult.data ?? []) as Note[];
-
-    setRestaurants(nextRestaurants);
-    setNotes(nextNotes);
-
-    if (nextRestaurants.length > 0) {
-      setSelectedRestaurantId((prev) => prev || nextRestaurants[0].id);
-    }
-
-    setLoading(false);
   }
 
   const mergedRestaurants = useMemo(
@@ -158,7 +171,7 @@ export default function HomePage() {
     null;
 
   useEffect(() => {
-    if (!selectedRestaurantId && visibleRestaurants[0]) {
+    if (selectedRestaurantId === null && visibleRestaurants[0]) {
       setSelectedRestaurantId(visibleRestaurants[0].id);
     }
   }, [selectedRestaurantId, visibleRestaurants]);
@@ -193,33 +206,36 @@ export default function HomePage() {
     setSaving(true);
     setErrorMessage('');
 
-    const { data, error } = await supabase
-      .from('restaurants')
-      .insert({
-        name: restaurantForm.name.trim(),
-        category: restaurantForm.category.trim(),
-        distance: restaurantForm.distance,
-        price: restaurantForm.price,
-        waiting: restaurantForm.waiting,
-        recommended_menu: restaurantForm.recommended_menu.trim() || null,
-        created_by: nickname.trim(),
-      })
-      .select()
-      .single();
+    try {
+      const { data, error } = await supabase
+        .from('restaurants')
+        .insert({
+          name: restaurantForm.name.trim(),
+          category: restaurantForm.category.trim(),
+          distance: restaurantForm.distance,
+          price: restaurantForm.price,
+          waiting: restaurantForm.waiting,
+          recommended_menu: restaurantForm.recommended_menu.trim() || null,
+          created_by: nickname.trim(),
+        })
+        .select()
+        .single();
 
-    setSaving(false);
+      if (error) {
+        setErrorMessage(error.message);
+        alert(`식당 등록 실패: ${error.message}`);
+        return;
+      }
 
-    if (error) {
-      setErrorMessage(error.message);
-      return;
-    }
-
-    if (data) {
-      const typed = data as Restaurant;
-      setRestaurants((prev) => [typed, ...prev]);
-      setSelectedRestaurantId(typed.id);
-      setRestaurantForm(initialRestaurantForm);
-      setEditMode(false);
+      if (data) {
+        const typed = data as Restaurant;
+        setRestaurants((prev) => [typed, ...prev]);
+        setSelectedRestaurantId(typed.id);
+        setRestaurantForm(initialRestaurantForm);
+        setEditMode(false);
+      }
+    } finally {
+      setSaving(false);
     }
   }
 
@@ -253,34 +269,37 @@ export default function HomePage() {
     setSaving(true);
     setErrorMessage('');
 
-    const { data, error } = await supabase
-      .from('restaurants')
-      .update({
-        name: restaurantForm.name.trim(),
-        category: restaurantForm.category.trim(),
-        distance: restaurantForm.distance,
-        price: restaurantForm.price,
-        waiting: restaurantForm.waiting,
-        recommended_menu: restaurantForm.recommended_menu.trim() || null,
-      })
-      .eq('id', selectedRestaurant.id)
-      .select()
-      .single();
+    try {
+      const { data, error } = await supabase
+        .from('restaurants')
+        .update({
+          name: restaurantForm.name.trim(),
+          category: restaurantForm.category.trim(),
+          distance: restaurantForm.distance,
+          price: restaurantForm.price,
+          waiting: restaurantForm.waiting,
+          recommended_menu: restaurantForm.recommended_menu.trim() || null,
+        })
+        .eq('id', selectedRestaurant.id)
+        .select()
+        .single();
 
-    setSaving(false);
+      if (error) {
+        setErrorMessage(error.message);
+        alert(`식당 수정 실패: ${error.message}`);
+        return;
+      }
 
-    if (error) {
-      setErrorMessage(error.message);
-      return;
-    }
-
-    if (data) {
-      const typed = data as Restaurant;
-      setRestaurants((prev) =>
-        prev.map((item) => (item.id === typed.id ? typed : item))
-      );
-      setEditMode(false);
-      setRestaurantForm(initialRestaurantForm);
+      if (data) {
+        const typed = data as Restaurant;
+        setRestaurants((prev) =>
+          prev.map((item) => (item.id === typed.id ? typed : item))
+        );
+        setEditMode(false);
+        setRestaurantForm(initialRestaurantForm);
+      }
+    } finally {
+      setSaving(false);
     }
   }
 
@@ -300,94 +319,131 @@ export default function HomePage() {
     setSaving(true);
     setErrorMessage('');
 
-    const { data, error } = await supabase
-      .from('notes')
-      .insert({
-        restaurant_id: selectedRestaurant.id,
-        nickname: nickname.trim(),
-        rating: noteForm.rating,
-        waiting: selectedRestaurant.waiting,
-        distance: selectedRestaurant.distance,
-        price: selectedRestaurant.price,
-        recommended_menu: selectedRestaurant.recommended_menu ?? null,
-        day_label: null,
-        text: noteForm.text.trim(),
-      })
-      .select()
-      .single();
+    try {
+      const { data, error } = await supabase
+        .from('notes')
+        .insert({
+          restaurant_id: selectedRestaurant.id,
+          nickname: nickname.trim(),
+          rating: noteForm.rating,
+          waiting: selectedRestaurant.waiting,
+          distance: selectedRestaurant.distance,
+          price: selectedRestaurant.price,
+          recommended_menu: selectedRestaurant.recommended_menu ?? null,
+          day_label: null,
+          text: noteForm.text.trim(),
+        })
+        .select()
+        .single();
 
-    setSaving(false);
+      if (error) {
+        setErrorMessage(error.message);
+        alert(`후기 등록 실패: ${error.message}`);
+        return;
+      }
 
-    if (error) {
-      setErrorMessage(error.message);
-      return;
-    }
-
-    if (data) {
-      setNotes((prev) => [data as Note, ...prev]);
-      setNoteForm(initialNoteForm);
-      setOpenNoteRestaurantId(selectedRestaurant.id);
+      if (data) {
+        setNotes((prev) => [data as Note, ...prev]);
+        setNoteForm(initialNoteForm);
+        setOpenNoteRestaurantId(selectedRestaurant.id);
+      }
+    } finally {
+      setSaving(false);
     }
   }
 
-    async function handleDeleteNote(noteId: string) {
+  async function handleDeleteNote(note: Note) {
     if (!supabase) return;
+
     if (!isAdmin) {
-      alert('삭제 권한이 없어유.');
+      alert('삭제 권한이 없어.');
       return;
     }
 
-    const ok = window.confirm('이 비고를 삭제할껀가요? 연결된 비고도 같이 삭제돼요..');
+    const ok = window.confirm('이 비고를 삭제할까?');
     if (!ok) return;
 
     setSaving(true);
     setErrorMessage('');
 
-    const { error } = await supabase.from('notes').delete().eq('id', noteId);
+    try {
+      const { data, error } = await supabase
+        .from('notes')
+        .delete()
+        .eq('id', note.id)
+        .select('id');
 
-    setSaving(false);
+      if (error) {
+        setErrorMessage(error.message);
+        alert(`삭제 실패: ${error.message}`);
+        return;
+      }
 
-    if (error) {
-      setErrorMessage(error.message);
+      if (!data || data.length === 0) {
+        const message = '삭제 요청은 갔는데 실제로 삭제된 비고가 없어. RLS나 id 타입을 확인해봐.';
+        setErrorMessage(message);
+        alert(message);
+        return;
+      }
+
+      await fetchData();
+    } finally {
+      setSaving(false);
+    }
+  }
+
+  function toggleRestaurantNotes(restaurantId: number) {
+    setOpenNoteRestaurantId((prev) => (prev === restaurantId ? null : restaurantId));
+  }
+
+  async function handleDeleteRestaurant(restaurantId: number) {
+    if (!supabase) return;
+
+    if (!isAdmin) {
+      alert('삭제 권한이 없어유.');
       return;
     }
 
-    setNotes((prev) => prev.filter((note) => note.id !== noteId));
+    const ok = window.confirm('이 식당을 삭제할까요? 연결된 비고도 같이 삭제됩니다.');
+    if (!ok) return;
+
+    setSaving(true);
+    setErrorMessage('');
+
+    try {
+      const { data, error } = await supabase
+        .from('restaurants')
+        .delete()
+        .eq('id', restaurantId)
+        .select('id');
+
+      if (error) {
+        setErrorMessage(error.message);
+        alert(`식당 삭제 실패: ${error.message}`);
+        return;
+      }
+
+      if (!data || data.length === 0) {
+        const message = '삭제 요청은 갔는데 실제로 삭제된 식당이 없어. RLS나 id 타입을 확인해봐.';
+        setErrorMessage(message);
+        alert(message);
+        return;
+      }
+
+      if (selectedRestaurantId === restaurantId) {
+        setSelectedRestaurantId(null);
+        setEditMode(false);
+      }
+
+      if (openNoteRestaurantId === restaurantId) {
+        setOpenNoteRestaurantId(null);
+      }
+
+      await fetchData();
+    } finally {
+      setSaving(false);
+    }
   }
-
-  function toggleRestaurantNotes(restaurantId: string) {
-    setOpenNoteRestaurantId((prev) => (prev === restaurantId ? '' : restaurantId));
-  }
-
-  async function handleDeleteRestaurant(restaurantId: string) {
-  if (!supabase) return;
-  if (!isAdmin) {
-    alert('삭제 권한이 없어유.');
-    return;
-  }
-
-  const ok = window.confirm('이 식당을 삭제할껀가요? 연결된 비고도 같이 삭제돼요..');
-  if (!ok) return;
-
-  setSaving(true);
-  setErrorMessage('');
-
-  const { error } = await supabase.from('restaurants').delete().eq('id', restaurantId);
-
-  setSaving(false);
-
-  if (error) {
-    setErrorMessage(error.message);
-    return;
-  }
-
-  setRestaurants((prev) => prev.filter((restaurant) => restaurant.id !== restaurantId));
-  setNotes((prev) => prev.filter((note) => note.restaurant_id !== restaurantId));
-
-  if (selectedRestaurantId === restaurantId) {
-    setSelectedRestaurantId('');
-  }
-}
 
   const topThree = visibleRestaurants.slice(0, 3);
 
@@ -782,7 +838,10 @@ export default function HomePage() {
                     <button
                       type="button"
                       className="button danger"
-                      onClick={() => handleDeleteRestaurant(selectedRestaurant.id)}
+                      onClick={(e) => {
+                        e.stopPropagation();
+                        void handleDeleteRestaurant(selectedRestaurant.id);
+                      }}
                       disabled={saving}
                     >
                       식당 삭제
@@ -997,7 +1056,10 @@ export default function HomePage() {
                           <button
                             type="button"
                             className="button danger small"
-                            onClick={() => handleDeleteNote(note.id)}
+                            onClick={(e) => {
+                              e.stopPropagation();
+                              void handleDeleteNote(note);
+                            }}
                             disabled={saving}
                           >
                             삭제
