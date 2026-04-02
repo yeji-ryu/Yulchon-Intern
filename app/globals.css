@@ -1,0 +1,538 @@
+:root {
+  --bg: #f5f7fb;
+  --card: #ffffff;
+  --line: #e5e7eb;
+  --text: #0f172a;
+  --muted: #64748b;
+  --dark: #111827;
+  --accent: #1f2937;
+}
+
+* {
+  box-sizing: border-box;
+}
+
+html,
+body {
+  margin: 0;
+  padding: 0;
+  background: linear-gradient(180deg, #f8fafc 0%, #eef2ff 100%);
+  color: var(--text);
+  font-family: Arial, Helvetica, sans-serif;
+}
+
+button,
+input,
+select,
+textarea {
+  font: inherit;
+}
+
+button {
+  appearance: none;
+}
+
+.page-shell {
+  max-width: 1440px;
+  margin: 0 auto;
+  padding: 28px;
+}
+
+.hero-card,
+.panel,
+.warning-card,
+.stat-card {
+  background: var(--card);
+  border: 1px solid rgba(226, 232, 240, 0.9);
+  border-radius: 28px;
+  box-shadow: 0 10px 30px rgba(15, 23, 42, 0.06);
+}
+
+.hero-card {
+  display: grid;
+  grid-template-columns: 1.4fr 0.8fr;
+  gap: 20px;
+  padding: 28px;
+  margin-bottom: 20px;
+}
+
+.hero-card h1 {
+  font-size: 2.3rem;
+  margin: 12px 0;
+}
+
+.hero-card p {
+  line-height: 1.7;
+  color: var(--muted);
+  max-width: 760px;
+}
+
+.login-card {
+  background: #f8fafc;
+  border-radius: 24px;
+  padding: 18px;
+  border: 1px solid var(--line);
+}
+
+.warning-card {
+  margin-bottom: 20px;
+  padding: 16px 18px;
+}
+
+.warning-card.error {
+  border-color: #fecaca;
+  background: #fff7f7;
+}
+
+.stats-grid,
+.main-grid,
+.control-grid,
+.form-grid,
+.button-row,
+.chip-row,
+.rating-wrap {
+  display: grid;
+  gap: 14px;
+}
+
+.stats-grid {
+  grid-template-columns: repeat(3, 1fr);
+  margin-bottom: 20px;
+}
+
+.stat-card {
+  padding: 20px;
+}
+
+.stat-card strong {
+  display: block;
+  font-size: 2rem;
+  margin-top: 8px;
+}
+
+.stat-card.dark {
+  background: var(--dark);
+  color: white;
+}
+
+.muted {
+  color: var(--muted);
+  font-size: 0.95rem;
+}
+
+.muted.light {
+  color: #cbd5e1;
+}
+
+.muted.small {
+  font-size: 0.82rem;
+}
+
+.main-grid {
+  grid-template-columns: 1.05fr 0.95fr;
+  align-items: start;
+}
+
+.left-column,
+.right-column {
+  display: grid;
+  gap: 20px;
+}
+
+.panel {
+  padding: 22px;
+}
+
+.panel-header {
+  margin-bottom: 16px;
+}
+
+.panel-header h2 {
+  margin: 0;
+  font-size: 1.2rem;
+}
+
+.panel-header.between,
+.restaurant-top,
+.detail-hero,
+.note-item summary,
+.note-item-top {
+  display: flex;
+  justify-content: space-between;
+  gap: 12px;
+}
+
+.control-grid.five {
+  grid-template-columns: 2fr repeat(4, 1fr);
+}
+
+.form-grid.two {
+  grid-template-columns: repeat(2, 1fr);
+  margin-bottom: 14px;
+}
+
+.input,
+.select,
+.textarea {
+  width: 100%;
+  border: 1px solid var(--line);
+  border-radius: 16px;
+  padding: 14px 16px;
+  background: white;
+  color: var(--text);
+}
+
+.input:focus,
+.select:focus,
+.textarea:focus {
+  outline: none;
+  border-color: #94a3b8;
+  box-shadow: 0 0 0 3px rgba(148, 163, 184, 0.15);
+}
+
+.textarea {
+  resize: vertical;
+  min-height: 170px;
+}
+
+.button {
+  border: none;
+  border-radius: 16px;
+  padding: 14px 18px;
+  cursor: pointer;
+  font-weight: 700;
+  transition: 0.18s ease;
+}
+
+.button:hover:not(:disabled) {
+  transform: translateY(-1px);
+}
+
+.button.primary {
+  background: var(--dark);
+  color: white;
+}
+
+.button.secondary {
+  background: white;
+  color: var(--text);
+  border: 1px solid var(--line);
+}
+
+.button.block {
+  width: 100%;
+}
+
+.button:disabled {
+  opacity: 0.6;
+  cursor: not-allowed;
+}
+
+.user-box,
+.empty-box,
+.edit-box {
+  border: 1px solid var(--line);
+  border-radius: 20px;
+  padding: 16px;
+  background: #f8fafc;
+}
+
+.empty-box.small {
+  padding: 14px;
+  font-size: 0.95rem;
+}
+
+.restaurant-list,
+.note-list,
+.note-form-wrap {
+  display: grid;
+  gap: 14px;
+}
+
+.restaurant-card {
+  border: 1px solid var(--line);
+  border-radius: 24px;
+  padding: 18px;
+  background: white;
+  text-align: left;
+}
+
+.restaurant-card.active {
+  background: var(--dark);
+  color: white;
+  border-color: var(--dark);
+}
+
+.restaurant-main-button {
+  width: 100%;
+  border: none;
+  background: transparent;
+  color: inherit;
+  text-align: left;
+  padding: 0;
+  cursor: pointer;
+}
+
+.restaurant-main-button:hover {
+  opacity: 0.98;
+}
+
+.restaurant-card h3,
+.detail-hero h3 {
+  margin: 10px 0 4px;
+  font-size: 1.45rem;
+}
+
+.restaurant-card p,
+.detail-hero p {
+  margin: 0;
+  color: inherit;
+  opacity: 0.78;
+}
+
+.restaurant-score {
+  text-align: right;
+}
+
+.restaurant-score strong {
+  display: block;
+  font-size: 1.4rem;
+}
+
+.pill,
+.tag,
+.rating-chip {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  border-radius: 999px;
+}
+
+.pill {
+  background: #e2e8f0;
+  color: #334155;
+  padding: 7px 12px;
+  font-size: 0.9rem;
+}
+
+.pill.dark {
+  background: var(--dark);
+  color: white;
+}
+
+.tag {
+  padding: 9px 12px;
+  background: #f1f5f9;
+  color: #334155;
+  font-size: 0.92rem;
+}
+
+.restaurant-card.active .tag {
+  background: rgba(255, 255, 255, 0.12);
+  color: white;
+}
+
+.chip-row {
+  grid-auto-flow: column;
+  justify-content: start;
+}
+
+.chip-row.wrap {
+  grid-auto-flow: row;
+  grid-template-columns: repeat(auto-fit, minmax(140px, max-content));
+}
+
+.chip-row.compact {
+  margin: 10px 0 14px;
+}
+
+.detail-hero {
+  align-items: center;
+  padding-bottom: 12px;
+}
+
+.score-box {
+  min-width: 110px;
+  text-align: center;
+  background: var(--dark);
+  color: white;
+  border-radius: 20px;
+  padding: 16px;
+  font-size: 1.6rem;
+  font-weight: 700;
+}
+
+.button-row {
+  grid-auto-flow: column;
+  justify-content: start;
+  margin-top: 14px;
+}
+
+.rating-wrap {
+  grid-template-columns: repeat(5, max-content);
+}
+
+.rating-chip {
+  border: 1px solid var(--line);
+  padding: 9px 12px;
+  background: white;
+  cursor: pointer;
+}
+
+.rating-chip.active {
+  background: var(--dark);
+  color: white;
+  border-color: var(--dark);
+}
+
+.form-row {
+  display: grid;
+  gap: 10px;
+}
+
+.form-row label,
+.section-label {
+  font-size: 0.92rem;
+  font-weight: 700;
+  color: #475569;
+}
+
+.edit-box {
+  margin-top: 14px;
+}
+
+.note-list.inline {
+  margin-top: 14px;
+}
+
+.note-item {
+  border: 1px solid var(--line);
+  border-radius: 22px;
+  padding: 16px;
+  background: white;
+}
+
+.note-item summary {
+  list-style: none;
+  cursor: pointer;
+  align-items: center;
+}
+
+.note-item summary::-webkit-details-marker {
+  display: none;
+}
+
+.note-item summary strong {
+  display: block;
+  font-size: 1rem;
+}
+
+.note-item summary span {
+  color: var(--muted);
+  font-size: 0.9rem;
+}
+
+.note-summary-right {
+  display: grid;
+  text-align: right;
+}
+
+.note-item-simple {
+  border: 1px solid var(--line);
+  border-radius: 22px;
+  padding: 16px;
+  background: white;
+  color: var(--text);
+}
+
+.note-item-simple .note-text {
+  color: var(--text);
+}
+
+.note-item-simple .note-item-top strong {
+  color: var(--text);
+}
+
+.note-item-simple .note-item-top span {
+  color: var(--muted);
+}
+
+.restaurant-card.active .note-item-simple {
+  background: white;
+  color: var(--text);
+}
+
+.restaurant-card.active .note-item-simple .note-text {
+  color: var(--text);
+}
+
+.restaurant-card.active .note-item-simple .note-item-top strong {
+  color: var(--text);
+}
+
+.restaurant-card.active .note-item-simple .note-item-top span {
+  color: var(--muted);
+}
+
+.note-item-top {
+  align-items: flex-start;
+  margin-bottom: 10px;
+}
+
+.note-item-top strong {
+  display: block;
+  font-size: 1rem;
+  margin-bottom: 4px;
+}
+
+.note-item-top span {
+  color: var(--muted);
+  font-size: 0.95rem;
+}
+
+.note-text {
+  white-space: pre-wrap;
+  line-height: 1.8;
+  margin: 0;
+  color: var(--text);
+}
+
+@media (max-width: 1120px) {
+  .hero-card,
+  .main-grid,
+  .stats-grid,
+  .control-grid.five {
+    grid-template-columns: 1fr;
+  }
+}
+
+@media (max-width: 720px) {
+  .page-shell {
+    padding: 16px;
+  }
+
+  .form-grid.two,
+  .button-row,
+  .rating-wrap {
+    grid-template-columns: 1fr;
+    grid-auto-flow: row;
+  }
+
+  .panel-header.between,
+  .restaurant-top,
+  .detail-hero,
+  .note-item summary,
+  .note-item-top {
+    flex-direction: column;
+    align-items: flex-start;
+  }
+
+  .restaurant-score,
+  .note-summary-right {
+    text-align: left;
+  }
+
+  .chip-row {
+    grid-auto-flow: row;
+  }
+}
