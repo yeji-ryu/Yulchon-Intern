@@ -1,9 +1,10 @@
 'use client';
 
+import Image from 'next/image';
 import { useEffect, useMemo, useState } from 'react';
 import StarRating from '@/components/StarRating';
 import { isSupabaseConfigured, supabase } from '@/lib/supabase';
-import { mergeRestaurants, sortRestaurants } from '@/lib/utils';
+import { mergeRestaurants } from '@/lib/utils';
 import {
   DistanceLevel,
   Note,
@@ -158,7 +159,73 @@ export default function HomePage() {
       return matchesSearch && matchesDistance && matchesPrice && matchesWaiting;
     });
 
-    return sortRestaurants(filtered, sortBy).map((item, index) => ({
+    const distanceOrder: Record<DistanceLevel, number> = {
+      가깝다: 0,
+      적당: 1,
+      멀다: 2,
+    };
+
+    const priceOrder: Record<PriceLevel, number> = {
+      싸다: 0,
+      적당: 1,
+      비싸다: 2,
+    };
+
+    const sorted = [...filtered].sort((a, b) => {
+      if (sortBy === 'rating') {
+        const ratingDiff = b.avgRating - a.avgRating;
+        if (ratingDiff !== 0) return ratingDiff;
+
+        const noteCountDiff = b.notes.length - a.notes.length;
+        if (noteCountDiff !== 0) return noteCountDiff;
+
+        return a.name.localeCompare(b.name, 'ko');
+      }
+
+      if (sortBy === 'reviews') {
+        const noteCountDiff = b.notes.length - a.notes.length;
+        if (noteCountDiff !== 0) return noteCountDiff;
+
+        const ratingDiff = b.avgRating - a.avgRating;
+        if (ratingDiff !== 0) return ratingDiff;
+
+        return a.name.localeCompare(b.name, 'ko');
+      }
+
+      if (sortBy === 'distance') {
+        const distanceDiff = distanceOrder[a.distance] - distanceOrder[b.distance];
+        if (distanceDiff !== 0) return distanceDiff;
+
+        const ratingDiff = b.avgRating - a.avgRating;
+        if (ratingDiff !== 0) return ratingDiff;
+
+        const noteCountDiff = b.notes.length - a.notes.length;
+        if (noteCountDiff !== 0) return noteCountDiff;
+
+        return a.name.localeCompare(b.name, 'ko');
+      }
+
+      if (sortBy === 'price') {
+        const priceDiff = priceOrder[a.price] - priceOrder[b.price];
+        if (priceDiff !== 0) return priceDiff;
+
+        const ratingDiff = b.avgRating - a.avgRating;
+        if (ratingDiff !== 0) return ratingDiff;
+
+        const noteCountDiff = b.notes.length - a.notes.length;
+        if (noteCountDiff !== 0) return noteCountDiff;
+
+        return a.name.localeCompare(b.name, 'ko');
+      }
+
+      if (sortBy === 'name') {
+        return a.name.localeCompare(b.name, 'ko');
+      }
+
+      return 0;
+    });
+
+    return sorted.map((item, index) => ({
       ...item,
       rank: index + 1,
     }));
@@ -312,7 +379,7 @@ export default function HomePage() {
     }
 
     if (!noteForm.text.trim()) {
-      alert('비고 내용을 입력!');
+      alert('후기 내용을 입력!');
       return;
     }
 
@@ -360,7 +427,7 @@ export default function HomePage() {
       return;
     }
 
-    const ok = window.confirm('이 비고를 삭제할까?');
+    const ok = window.confirm('이 후기를 삭제할까?');
     if (!ok) return;
 
     setSaving(true);
@@ -380,7 +447,7 @@ export default function HomePage() {
       }
 
       if (!data || data.length === 0) {
-        const message = '삭제 요청은 갔는데 실제로 삭제된 비고가 없어. RLS나 id 타입을 확인해봐.';
+        const message = '삭제 요청은 갔는데 실제로 삭제된 후기가 없어. RLS나 id 타입을 확인해봐.';
         setErrorMessage(message);
         alert(message);
         return;
@@ -404,7 +471,7 @@ export default function HomePage() {
       return;
     }
 
-    const ok = window.confirm('이 식당을 삭제할까요? 연결된 비고도 같이 삭제됩니다.');
+    const ok = window.confirm('이 식당을 삭제할까요? 연결된 후기도 같이 삭제됩니다.');
     if (!ok) return;
 
     setSaving(true);
@@ -448,19 +515,32 @@ export default function HomePage() {
   const topThree = visibleRestaurants.slice(0, 3);
 
   return (
-    <main className="page-shell">
-      <section className="hero-card">
-        <div>
-          <span className="pill dark">2026 상반기 율턴 식당 공유 사이트</span>
-          <h1>식대 식당을 서로 공유해보아요 ~~</h1>
-          <p>
-            닉네임으로 로그인 후, 식당을 직접 등록하거나 수정하고, 별점과 후기를 남겨서
-            퇴사 전까지 율턴만의 캐치테이블을 만들어봅시댜!
-          </p>
+    <main className="page-shell yulchon-theme">
+      <section className="hero-card yulchon-hero">
+        <div className="hero-brand">
+          <div className="hero-logo-box">
+            <Image
+              src="/yulchon-logo.png"
+              alt="Yulchon logo"
+              width={260}
+              height={130}
+              className="hero-logo"
+              priority
+            />
+          </div>
+
+          <div className="hero-copy">
+            <span className="pill brand">2026 상반기 율턴 식당 공유 사이트</span>
+            <h1>율턴들만의 캐치테이블 🍽️</h1>
+            <p>
+              닉네임으로 로그인 후, 식당을 직접 등록하거나 수정하고 별점과 후기를 남겨서
+              행복한 점심시간이 될 수 있도록 합시당 🤍
+            </p>
+          </div>
         </div>
 
-        <div className="login-card">
-          <div className="section-label">닉네임 로그인</div>
+        <div className="login-card brand-login-card">
+          <div className="section-label">닉네임 로그인 (익명가능)</div>
           {!nickname ? (
             <>
               <input
@@ -510,13 +590,16 @@ export default function HomePage() {
           <strong>{restaurants.length}</strong>
         </article>
         <article className="stat-card">
-          <div className="muted">비고 개수</div>
+          <div className="muted">후기 개수</div>
           <strong>{notes.length}</strong>
         </article>
         <article className="stat-card">
           <div className="muted">현재 1위</div>
           <strong>{topThree[0]?.name ?? '-'}</strong>
-          <span>★ {topThree[0]?.avgRating?.toFixed(1) ?? '0.0'}</span>
+          <span>
+            ★ {topThree[0]?.avgRating?.toFixed(1) ?? '0.0'} · 후기{' '}
+            {topThree[0]?.notes?.length ?? 0}개
+          </span>
         </article>
       </section>
 
@@ -530,7 +613,7 @@ export default function HomePage() {
             <div className="control-grid five">
               <input
                 className="input"
-                placeholder="식당명, 카테고리, 메뉴 검색"
+                placeholder="검색"
                 value={search}
                 onChange={(e) => setSearch(e.target.value)}
               />
@@ -541,7 +624,7 @@ export default function HomePage() {
                 onChange={(e) => setSortBy(e.target.value)}
               >
                 <option value="rating">별점순</option>
-                <option value="reviews">비고 많은순</option>
+                <option value="reviews">후기 많은순</option>
                 <option value="distance">가까운순</option>
                 <option value="price">저렴한순</option>
                 <option value="name">이름순</option>
@@ -708,7 +791,7 @@ export default function HomePage() {
           <article className="panel">
             <div className="panel-header between">
               <h2>식당 랭킹</h2>
-              <span className="muted">평균 별점 기준</span>
+              <span className="muted">평균 별점 우선 · 동점 시 후기 많은 순</span>
             </div>
 
             {loading ? (
@@ -746,7 +829,7 @@ export default function HomePage() {
 
                         <div className="restaurant-score">
                           <strong>★ {restaurant.avgRating.toFixed(1)}</strong>
-                          <span>비고 {restaurant.notes.length}개</span>
+                          <span>후기 {restaurant.notes.length}개</span>
                         </div>
                       </div>
 
@@ -765,14 +848,14 @@ export default function HomePage() {
                         className="button secondary"
                         onClick={() => toggleRestaurantNotes(restaurant.id)}
                       >
-                        {openNoteRestaurantId === restaurant.id ? '비고 닫기' : '비고 보기'}
+                        {openNoteRestaurantId === restaurant.id ? '후기 닫기' : '후기 보기'}
                       </button>
                     </div>
 
                     {openNoteRestaurantId === restaurant.id && (
                       <div className="note-list inline">
                         {restaurant.notes.length === 0 ? (
-                          <div className="empty-box small">아직 비고가 없어.</div>
+                          <div className="empty-box small">아직 후기가 없어.</div>
                         ) : (
                           restaurant.notes.map((note) => (
                             <div key={note.id} className="note-item-simple">
@@ -1004,11 +1087,11 @@ export default function HomePage() {
                 </div>
 
                 <div className="form-row">
-                  <label>비고</label>
+                  <label>후기</label>
                   <textarea
                     className="textarea"
                     rows={8}
-                    placeholder="먹어본 메뉴, 추천 이유, 꿀팁, 다시 갈 의향 등을 자유롭게 적어줘"
+                    placeholder="먹어본 메뉴, 추천 이유, 꿀팁, 다시 갈 의향, 몇번 갔는지 등을 자유롭게 적어주세용 🥰"
                     value={noteForm.text}
                     onChange={(e) =>
                       setNoteForm((prev) => ({ ...prev, text: e.target.value }))
