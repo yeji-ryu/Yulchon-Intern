@@ -64,6 +64,8 @@ export default function HomePage() {
   >('전체');
   const [errorMessage, setErrorMessage] = useState('');
   const [openNoteRestaurantId, setOpenNoteRestaurantId] = useState<number | null>(null);
+  const [editingNoteId, setEditingNoteId] = useState<number | null>(null);
+  const [editNoteForm, setEditNoteForm] = useState<NoteForm>(initialNoteForm);
 
   useEffect(() => {
     const savedNickname = window.localStorage.getItem('lunch_nickname') ?? '';
@@ -74,6 +76,76 @@ export default function HomePage() {
   useEffect(() => {
     void fetchData();
   }, []);
+
+  function canEditNote(note: Note) {
+  return (
+    !!nickname.trim() &&
+    (isAdmin ||
+      note.nickname.trim().toLowerCase() === nickname.trim().toLowerCase())
+  );
+}
+
+  function beginEditNote(note: Note) {
+    if (!canEditNote(note)) {
+      alert('본인이 작성한 후기만 수정할 수 있어요.');
+      return;
+    }
+
+    setEditingNoteId(note.id);
+    setEditNoteForm({
+      rating: note.rating,
+      text: note.text,
+    });
+  }
+
+    async function handleSaveNoteEdit(noteId: number) {
+    if (!supabase) return;
+
+    const targetNote = notes.find((note) => note.id === noteId);
+    if (!targetNote) return;
+
+    if (!canEditNote(targetNote)) {
+      alert('본인이 작성한 후기만 수정할 수 있어요.');
+      return;
+    }
+
+    if (!editNoteForm.text.trim()) {
+      alert('후기 내용을 입력!');
+      return;
+    }
+
+    setSaving(true);
+    setErrorMessage('');
+
+    try {
+      const { data, error } = await supabase
+        .from('notes')
+        .update({
+          rating: editNoteForm.rating,
+          text: editNoteForm.text.trim(),
+        })
+        .eq('id', noteId)
+        .select()
+        .single();
+
+      if (error) {
+        setErrorMessage(error.message);
+        alert(`후기 수정 실패: ${error.message}`);
+        return;
+      }
+
+      if (data) {
+        const updatedNote = data as Note;
+        setNotes((prev) =>
+          prev.map((note) => (note.id === updatedNote.id ? updatedNote : note))
+        );
+        setEditingNoteId(null);
+        setEditNoteForm(initialNoteForm);
+      }
+    } finally {
+      setSaving(false);
+    }
+  }
 
   async function fetchData() {
     if (!supabase) {
@@ -255,7 +327,22 @@ export default function HomePage() {
     window.localStorage.removeItem('lunch_nickname');
   }
 
-  const isAdmin = nickname.trim() === '인프라보안팀유예지';
+  const isAdmin = nickname.trim() === 'admin';
+  
+  const isOwner =
+  !!nickname.trim() &&
+  !!selectedRestaurant &&
+  selectedRestaurant.created_by?.trim().toLowerCase() ===
+    nickname.trim().toLowerCase();
+
+  const canEditOrDelete =
+  !!nickname.trim() &&
+  !!selectedRestaurant &&
+  (
+    isAdmin ||
+    selectedRestaurant.created_by?.trim().toLowerCase() ===
+      nickname.trim().toLowerCase()
+  );
 
   async function handleCreateRestaurant() {
     if (!supabase) return;
@@ -265,8 +352,19 @@ export default function HomePage() {
       return;
     }
 
+     const normalizedName = restaurantForm.name.trim().toLowerCase();
+
     if (!restaurantForm.name.trim()) {
       alert('식당 이름을 입력!');
+      return;
+    }
+
+    const alreadyExists = restaurants.some(
+    (restaurant) => restaurant.name.trim().toLowerCase() === normalizedName
+    );
+
+    if (alreadyExists) {
+      alert('이미 등록된 식당이에요!');
       return;
     }
 
@@ -330,6 +428,20 @@ export default function HomePage() {
 
     if (!restaurantForm.name.trim()) {
       alert('식당 이름을 입력!');
+      return;
+    }
+
+        const canEdit =
+      !!nickname.trim() &&
+      !!selectedRestaurant &&
+      (
+        isAdmin ||
+        selectedRestaurant.created_by?.trim().toLowerCase() ===
+          nickname.trim().toLowerCase()
+      );
+
+    if (!canEdit) {
+      alert('본인이 등록한 식당만 수정할 수 있어요.');
       return;
     }
 
@@ -422,8 +534,13 @@ export default function HomePage() {
   async function handleDeleteNote(note: Note) {
     if (!supabase) return;
 
-    if (!isAdmin) {
-      alert('삭제 권한이 없어.');
+    const canDeleteNote =
+      !!nickname.trim() &&
+       (isAdmin ||
+      note.nickname.trim().toLowerCase() === nickname.trim().toLowerCase());
+
+    if (!canDeleteNote) {
+      alert('본인이 작성한 후기만 삭제할 수 있어요.');
       return;
     }
 
@@ -466,8 +583,21 @@ export default function HomePage() {
   async function handleDeleteRestaurant(restaurantId: number) {
     if (!supabase) return;
 
-    if (!isAdmin) {
-      alert('삭제 권한이 없어유.');
+    const targetRestaurant = restaurants.find(
+    (restaurant) => restaurant.id === restaurantId
+    );
+
+    const canDelete =
+      !!nickname.trim() &&
+      !!targetRestaurant &&
+      (
+        isAdmin ||
+        targetRestaurant.created_by?.trim().toLowerCase() ===
+          nickname.trim().toLowerCase()
+      );
+
+    if (!canDelete) {
+      alert('본인이 등록한 식당만 삭제할 수 있어요.');
       return;
     }
 
@@ -530,11 +660,16 @@ export default function HomePage() {
           </div>
 
           <div className="hero-copy">
-            <span className="pill brand">2026 상반기 율턴 식당 공유 사이트</span>
-            <h1>율턴들만의 캐치테이블 🍽️</h1>
+            <span className="pill brand"> 🤍 율촌 식당 공유 사이트 🤍 </span>
+            <h1>율촌만의 캐치테이블 🍽️</h1>
             <p>
               닉네임으로 로그인 후, 식당을 직접 등록하거나 수정하고 별점과 후기를 남겨서
-              행복한 점심시간이 될 수 있도록 합시당 🤍
+              정보를 공유해보아요오-!!!
+              <br />
+              <br />
+              <span className="muted small">
+                관련 피드백 (추가했으면 하는 기능 등)이 있다면 인프라보안팀 인턴 유예지에게 팀즈로 편하게 주세요!
+              </span>
             </p>
           </div>
         </div>
@@ -797,7 +932,7 @@ export default function HomePage() {
             {loading ? (
               <div className="empty-box">불러오는 중...</div>
             ) : visibleRestaurants.length === 0 ? (
-              <div className="empty-box">조건에 맞는 식당이 없어.</div>
+              <div className="empty-box">조건에 맞는 식당이 없어요 ㅜㅜ</div>
             ) : (
               <div className="restaurant-list">
                 {visibleRestaurants.map((restaurant) => (
@@ -855,7 +990,7 @@ export default function HomePage() {
                     {openNoteRestaurantId === restaurant.id && (
                       <div className="note-list inline">
                         {restaurant.notes.length === 0 ? (
-                          <div className="empty-box small">아직 후기가 없어.</div>
+                          <div className="empty-box small">아직 후기가 없어요...</div>
                         ) : (
                           restaurant.notes.map((note) => (
                             <div key={note.id} className="note-item-simple">
@@ -909,15 +1044,18 @@ export default function HomePage() {
                 </div>
 
                 <div className="button-row">
-                  <button
-                    type="button"
-                    className="button secondary"
-                    onClick={beginEditRestaurant}
-                  >
-                    식당 정보 수정하기
-                  </button>
+                  {canEditOrDelete && (
+                    <button
+                      type="button"
+                      className="button secondary"
+                      onClick={beginEditRestaurant}
+                    >
+                      식당 정보 수정하기
+                    </button>
+                  )}
+                  
 
-                  {isAdmin && selectedRestaurant && (
+                  {canEditOrDelete && selectedRestaurant && (
                     <button
                       type="button"
                       className="button danger"
@@ -1135,7 +1273,23 @@ export default function HomePage() {
 
                       <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
                         <span>★ {note.rating.toFixed(1)}</span>
-                        {isAdmin && (
+
+                        {canEditNote(note) && (
+                          <button
+                            type="button"
+                            className="button secondary small"
+                            onClick={(e) => {
+                              e.stopPropagation();
+                              beginEditNote(note);
+                            }}
+                            disabled={saving}
+                          >
+                            수정
+                          </button>
+                        )}
+
+                        {(isAdmin ||
+                          note.nickname.trim().toLowerCase() === nickname.trim().toLowerCase()) && (
                           <button
                             type="button"
                             className="button danger small"
@@ -1151,7 +1305,56 @@ export default function HomePage() {
                       </div>
                     </div>
 
+                    {editingNoteId === note.id ? (
+                    <div className="edit-box">
+                      <div className="form-row">
+                        <label>별점</label>
+                        <StarRating
+                          value={editNoteForm.rating}
+                          onChange={(rating) =>
+                            setEditNoteForm((prev) => ({ ...prev, rating }))
+                          }
+                        />
+                      </div>
+
+                      <div className="form-row">
+                        <label>후기</label>
+                        <textarea
+                          className="textarea"
+                          rows={5}
+                          value={editNoteForm.text}
+                          onChange={(e) =>
+                            setEditNoteForm((prev) => ({ ...prev, text: e.target.value }))
+                          }
+                        />
+                      </div>
+
+                      <div className="button-row">
+                        <button
+                          type="button"
+                          className="button primary small"
+                          onClick={() => void handleSaveNoteEdit(note.id)}
+                          disabled={saving}
+                        >
+                          저장
+                        </button>
+
+                        <button
+                          type="button"
+                          className="button secondary small"
+                          onClick={() => {
+                            setEditingNoteId(null);
+                            setEditNoteForm(initialNoteForm);
+                          }}
+                          disabled={saving}
+                        >
+                          취소
+                        </button>
+                      </div>
+                    </div>
+                  ) : (
                     <p className="note-text">{note.text}</p>
+                  )}
                   </div>
                 ))}
               </div>
