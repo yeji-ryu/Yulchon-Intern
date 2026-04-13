@@ -544,7 +544,7 @@ export default function HomePage() {
       return;
     }
 
-    const ok = window.confirm('이 후기를 삭제할까?');
+    const ok = window.confirm('이 후기를 삭제할까요...ㅜㅜ?');
     if (!ok) return;
 
     setSaving(true);
